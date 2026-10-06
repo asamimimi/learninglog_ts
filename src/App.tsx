@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useForm } from "react-hook-form";
 import { createClient } from '@supabase/supabase-js';
 
 // UI
@@ -12,12 +13,17 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-
+// 型指定
 type Recode = {
   id: number,
   title: string,
   time: number
 }
+type Inputs = {
+  text: string,
+  time: string
+}
+
 
 
 export default function App() {
@@ -35,6 +41,12 @@ export default function App() {
     // 文字列として扱われないよう、Number()で数値に変換
     return sum + Number(content.time);
   }, 0); // 0 は初期値（sumの最初の値）
+
+  // フォーム管理
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const onSubmit = (data) => {
+    console.log(data); // data は各 register() に対応する値のまとまり
+  };
 
   // エラー判定
   const [isDisabled, setIsDisabled] = useState(false);
@@ -139,29 +151,45 @@ export default function App() {
             <Dialog.Backdrop />
             <Dialog.Positioner>
               <Dialog.Content>
-                <Dialog.Header>
-                  <Dialog.Title>新規登録</Dialog.Title>
-                </Dialog.Header>
-                {/* 入力エリア */}
-                <Dialog.Body>
-                  <Field.Root required>
-                    <Field.Label>
-                      学習内容 <Field.RequiredIndicator />
-                    </Field.Label>
-                    <Input placeholder="学習内容を入力" onChange={onChengeInputText} type="text" id='text' value={inpuText} />
-                  </Field.Root>
+                < form onSubmit={handleSubmit(onSubmit)} >
+                  <Dialog.Header>
+                    <Dialog.Title>新規登録</Dialog.Title>
+                  </Dialog.Header>
+                  {/* 入力エリア */}
+                  <Dialog.Body>
+                    <div>
+                      <label htmlFor="text">
+                        学習内容
+                      </label>
+                      <Input onChange={onChengeInputText} type="text" placeholder='学習内容を入力' id='text' value={inpuText} {...register("title", { required: "学習内容は必須です" })} />
+                      {errors.title && <p>{errors.title.message}</p>}
 
-                  <Field.Root>
-                    <Field.Label>学習時間</Field.Label>
-                    <NumberInput.Root required>
-                      <NumberInput.Control />
-                      <NumberInput.Input onChange={onChengeInputTime} type="number" placeholder='学習時間を入力' id='time' value={inpuTime} />
-                    </NumberInput.Root>
-                  </Field.Root>
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Button bg="blue.fg" fontWeight="semibold" onClick={onClickRecords}>登録する</Button>
-                </Dialog.Footer>
+                    </div>
+                    <div>
+                      <label htmlFor="time">
+                        学習時間
+                      </label>
+                      <NumberInput.Root>
+                        <NumberInput.Control />
+                        <NumberInput.Input onChange={onChengeInputTime} type="number" placeholder='学習時間を入力' id='time' value={inpuTime} {...register("time", {
+                          required: "学習時間は必須です", min: {
+                            value: 1,
+                            message: "時間は0以上である必要があります"
+                          }
+                        })} />
+                      </NumberInput.Root>
+                      時間
+                      {errors.time && <p>{errors.time.message}</p>}
+
+                    </div>
+
+
+                    <Button onClick={onClickRecords} type="submit" bg="teal.600">登録</Button>
+                    {
+                      (isDisabled && <p className='red'>入力されていない項目があります</p>)
+                    }
+                  </Dialog.Body>
+                </form>
 
                 <Dialog.CloseTrigger asChild>
                   <CloseButton size="sm" />
@@ -247,7 +275,7 @@ export default function App() {
 
 
 
-      </div>
+      </div >
 
     </>
   )
