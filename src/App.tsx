@@ -8,8 +8,15 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 import './App.css'
 
+
+type Todo = {
+  id: number,
+  title: string,
+  time: number
+}
+
 export default function App() {
-  const [todos, setTodos] = useState([])
+  const [todos, setTodos] = useState<Todo[]>([])
 
   useEffect(() => {
     async function getTodos() {
@@ -30,7 +37,8 @@ export default function App() {
     <ul>
       {todos.map((todo) => (
         <li key={todo.id}>{todo.title}</li>
-      ))}
-    </ul>
+      ))
+      }
+    </ul >
   )
 }
