@@ -177,7 +177,7 @@ export default function App() {
                       学習内容
                     </label>
                     <Input type="text" placeholder='学習内容を入力' id='text'  {...register("title", { required: "学習内容は必須です" })} />
-                    {errors.title && <p>{errors.title.message}</p>}
+                    {errors.title && <p className='error'>{errors.title.message}</p>}
 
                   </div>
                   <div className='time-wrapper'>
@@ -194,7 +194,7 @@ export default function App() {
                       })} />
                     </NumberInput.Root>
                     時間
-                    {errors.time && <p>{errors.time.message}</p>}
+                    {errors.time && <p className='error'>{errors.time.message}</p>}
 
                   </div>
 
@@ -254,6 +254,14 @@ export default function App() {
           })}
 
         </Table.Body>
+        <Table.Footer>
+          <Table.Row>
+            <Table.Cell>合計時間：</Table.Cell>
+            <Table.Cell>{totalTime}時間</Table.Cell>
+            <Table.Cell></Table.Cell>
+            <Table.Cell></Table.Cell>
+          </Table.Row>
+        </Table.Footer>
       </Table.Root>
 
       {/* 編集用のモーダル（1つだけ用意し、editingRecordの内容を編集する） */}
@@ -273,7 +281,7 @@ export default function App() {
                       学習内容 <Field.RequiredIndicator />
                     </Field.Label>
                     <Input type="text" placeholder='学習内容を入力' id='edit-text' {...registerEdit("title", { required: "学習内容は必須です" })} />
-                    {editErrors.title && <p>{editErrors.title.message}</p>}
+                    {editErrors.title && <p className='error'> {editErrors.title.message}</p>}
                   </Field.Root>
 
                   <Field.Root>
@@ -287,7 +295,7 @@ export default function App() {
                         }
                       })} />
                     </NumberInput.Root>
-                    {editErrors.time && <p>{editErrors.time.message}</p>}
+                    {editErrors.time && <p className='error'>{editErrors.time.message}</p>}
                   </Field.Root>
                 </Dialog.Body>
                 <Dialog.Footer>

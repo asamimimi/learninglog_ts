@@ -49,3 +49,9 @@ label {
     display: inline-block;
     margin-bottom: 4px;
 }
+
+.error {
+    color: red;
+    font-weight: 500;
+
+}
