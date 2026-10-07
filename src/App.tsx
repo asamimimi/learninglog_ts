@@ -19,10 +19,7 @@ type Recode = {
   title: string,
   time: number
 }
-type Inputs = {
-  text: string,
-  time: string
-}
+
 
 
 
@@ -36,20 +33,17 @@ export default function App() {
   const [inpuText, setInputText] = useState("");
   const [inpuTime, setInputTime] = useState(0);
 
+  // ダイアログの開閉
+  const [open, setOpen] = useState(false);
+
+
   // 合計時間
   const totalTime = records.reduce((sum, content) => {
     // 文字列として扱われないよう、Number()で数値に変換
     return sum + Number(content.time);
   }, 0); // 0 は初期値（sumの最初の値）
 
-  // フォーム管理
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const onSubmit = (data) => {
-    console.log(data); // data は各 register() に対応する値のまとまり
-  };
 
-  // エラー判定
-  const [isDisabled, setIsDisabled] = useState(false);
 
   // モーダルの開閉
   const [isOpen, setIsOpen] = useState(false);
@@ -68,7 +62,6 @@ export default function App() {
         return
       }
       setRecords(data)
-      console.log(data)
 
     }
     fetchRecords()
@@ -96,30 +89,25 @@ export default function App() {
   }
 
 
-  // 登録機能
-  const onClickRecords = async () => {
-
-    if (inpuText === "" || inpuTime <= 0) {
-      setIsDisabled(true);
-      return;
-    } else {
-      setIsDisabled(false);
+  // フォーム管理・データ登録
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const onSubmit = async (data) => {
+    try {
+      const { error } = await supabase.from('study-record').insert([{
+        title: data.title,
+        time: data.time,
+      }]);
+      if (error) {
+        console.error("登録エラー", error);
+        return;
+      }
+      // 登録成功時のみモーダルを閉じる
+      setIsOpen(false);
+      await fetchData();
+    } catch (error) {
+      console.error("通信エラー", error);
     }
-
-
-    // Supabase の `insert` を使ってデータを追加
-    const { error } = await supabase.from('study-record').insert([{ title: inpuText, time: inpuTime }]);
-    if (error) {
-      console.error("データ追加エラー:", error);
-      return;
-    }
-
-    await fetchData();
-    setInputText("");
-    setInputTime(0);
-    setIsOpen(false); // 登録が成功したときだけ閉じる
-  }
-
+  };
 
 
   // 削除機能
@@ -161,7 +149,7 @@ export default function App() {
                       <label htmlFor="text">
                         学習内容
                       </label>
-                      <Input onChange={onChengeInputText} type="text" placeholder='学習内容を入力' id='text' value={inpuText} {...register("title", { required: "学習内容は必須です" })} />
+                      <Input type="text" placeholder='学習内容を入力' id='text'  {...register("title", { required: "学習内容は必須です" })} />
                       {errors.title && <p>{errors.title.message}</p>}
 
                     </div>
@@ -171,10 +159,10 @@ export default function App() {
                       </label>
                       <NumberInput.Root>
                         <NumberInput.Control />
-                        <NumberInput.Input onChange={onChengeInputTime} type="number" placeholder='学習時間を入力' id='time' value={inpuTime} {...register("time", {
+                        <NumberInput.Input type="number" placeholder='学習時間を入力' id='time'  {...register("time", {
                           required: "学習時間は必須です", min: {
                             value: 1,
-                            message: "時間は0以上である必要があります"
+                            message: "時間は1以上である必要があります"
                           }
                         })} />
                       </NumberInput.Root>
@@ -182,12 +170,11 @@ export default function App() {
                       {errors.time && <p>{errors.time.message}</p>}
 
                     </div>
+                    <Dialog.ActionTrigger asChild>
+                      <Button variant="outline">キャンセル</Button>
+                    </Dialog.ActionTrigger>
+                    <Button onClick={onSubmit} type="submit" bg="teal.600">登録</Button>
 
-
-                    <Button onClick={onClickRecords} type="submit" bg="teal.600">登録</Button>
-                    {
-                      (isDisabled && <p className='red'>入力されていない項目があります</p>)
-                    }
                   </Dialog.Body>
                 </form>
 
@@ -249,6 +236,9 @@ export default function App() {
                               </Field.Root>
                             </Dialog.Body>
                             <Dialog.Footer>
+                              <Dialog.ActionTrigger asChild>
+                                <Button variant="outline">キャンセル</Button>
+                              </Dialog.ActionTrigger>
                               <Button bg="blue.fg" fontWeight="semibold">登録する</Button>
                             </Dialog.Footer>
                             <Dialog.CloseTrigger asChild>
