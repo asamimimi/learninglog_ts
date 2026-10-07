@@ -3,22 +3,15 @@ import { useForm } from "react-hook-form";
 import { createClient } from '@supabase/supabase-js';
 
 // UI
-import { Button, CloseButton, Dialog, Portal, Table, Icon, Field, Input, NumberInput } from "@chakra-ui/react"
-import { FaPen, FaTrashAlt } from "react-icons/fa";
+import { Button, CloseButton, Dialog, Portal, Table, Field, Input, NumberInput } from "@chakra-ui/react"
 
 import './App.css'
+import RecordList, { type Recode } from './components/Recors';
 
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-// 型指定
-type Recode = {
-  id: number,
-  title: string,
-  time: number
-}
 
 
 
@@ -27,11 +20,6 @@ export default function App() {
 
   // 学習記録
   const [records, setRecords] = useState<Recode[]>([])
-
-
-  // 入力テキスト
-  const [inpuText, setInputText] = useState("");
-  const [inpuTime, setInputTime] = useState(0);
 
   // 合計時間
   const totalTime = records.reduce((sum, content) => {
@@ -82,7 +70,7 @@ export default function App() {
 
   // フォーム管理・データ登録
   const { register, handleSubmit, formState: { errors } } = useForm<{ title: string, time: number }>();
-  const onSubmit = async (data: Recode) => {
+  const onSubmit = async (data: { title: string, time: number }) => {
     try {
       const { error } = await supabase.from('study-record').insert([{
         title: data.title,
@@ -235,25 +223,12 @@ export default function App() {
 
           {records.map((record) => {
             return (
-              <Table.Row key={record.id}>
-                <Table.Cell>{record.title}</Table.Cell>
-                <Table.Cell>{record.time}時間</Table.Cell>
-                <Table.Cell textAlign="center">
-                  {/* 編集画面オープンのトリガーアイコン */}
-                  <button onClick={() => onClickEdit(record)} className='btn'>
-                    <Icon size="lg" color="gray.400">
-                      <FaPen />
-                    </Icon>
-                  </button>
-                </Table.Cell>
-                <Table.Cell textAlign="center">
-                  <button onClick={() => onClickDelete(record.id)} className='btn'>
-                    <Icon size="lg" color="gray.400">
-                      <FaTrashAlt />
-                    </Icon>
-                  </button>
-                </Table.Cell>
-              </Table.Row>
+              <RecordList
+                key={record.id}
+                record={record}
+                onClickDelete={onClickDelete}
+                onClickEdit={onClickEdit}
+              />
             )
           })}
 
