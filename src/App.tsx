@@ -3,10 +3,12 @@ import { useForm } from "react-hook-form";
 import { createClient } from '@supabase/supabase-js';
 
 // UI
-import { Button, CloseButton, Dialog, Portal, Table, Field, Input, NumberInput } from "@chakra-ui/react"
+import { Table } from "@chakra-ui/react"
 
 import './App.css'
 import RecordList, { type Recode } from './components/Recors';
+import InputArea, { type FormValues } from './components/InputArea';
+import EditArea from './components/EditArea';
 
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -69,8 +71,8 @@ export default function App() {
 
 
   // フォーム管理・データ登録
-  const { register, handleSubmit, formState: { errors } } = useForm<{ title: string, time: number }>();
-  const onSubmit = async (data: { title: string, time: number }) => {
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
+  const onSubmit = async (data: FormValues) => {
     try {
       const { error } = await supabase.from('study-record').insert([{
         title: data.title,
@@ -110,7 +112,7 @@ export default function App() {
     handleSubmit: handleSubmitEdit,
     reset: resetEdit,
     formState: { errors: editErrors },
-  } = useForm<{ title: string, time: number }>();
+  } = useForm<FormValues>();
 
   // 編集モーダルを開く（選択した行の値をフォームに入れる）
   const onClickEdit = (record: Recode) => {
@@ -119,7 +121,7 @@ export default function App() {
   };
 
   // 更新機能
-  const onSubmitEdit = async (data: { title: string, time: number }) => {
+  const onSubmitEdit = async (data: FormValues) => {
     if (!editingRecord) return;
     const { error } = await supabase
       .from('study-record')
@@ -141,65 +143,16 @@ export default function App() {
 
 
       <h1>新・学習記録アプリ</h1>
+      {/* 登録エリア */}
+      <InputArea
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        handleSubmit={handleSubmit}
+        onSubmit={onSubmit}
+        register={register}
+        errors={errors}
+      />
 
-
-      <Dialog.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-        <Dialog.Trigger asChild>
-          <Button size="xl" bg="pink.solid" fontWeight="semibold">新規登録</Button>
-        </Dialog.Trigger>
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              < form onSubmit={handleSubmit(onSubmit)} >
-                <Dialog.Header>
-                  <Dialog.Title>新規登録</Dialog.Title>
-                </Dialog.Header>
-                {/* 入力エリア */}
-                <Dialog.Body>
-                  <div>
-                    <label htmlFor="text">
-                      学習内容
-                    </label>
-                    <Input type="text" placeholder='学習内容を入力' id='text'  {...register("title", { required: "学習内容は必須です" })} />
-                    {errors.title && <p className='error'>{errors.title.message}</p>}
-
-                  </div>
-                  <div className='time-wrapper'>
-                    <label htmlFor="time">
-                      学習時間
-                    </label>
-                    <NumberInput.Root>
-                      <NumberInput.Control />
-                      <NumberInput.Input type="number" placeholder='学習時間を入力' id='time'  {...register("time", {
-                        required: "学習時間は必須です", min: {
-                          value: 1,
-                          message: "時間は1以上である必要があります"
-                        }
-                      })} />
-                    </NumberInput.Root>
-                    時間
-                    {errors.time && <p className='error'>{errors.time.message}</p>}
-
-                  </div>
-
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Dialog.ActionTrigger asChild>
-                    <Button variant="outline" size="md">キャンセル</Button>
-                  </Dialog.ActionTrigger>
-                  <Button type="submit" bg="teal.600" size="md" className='submit-button'>登録</Button>
-
-                </Dialog.Footer>
-              </form>
-
-              <Dialog.CloseTrigger asChild>
-                <CloseButton size="sm" />
-              </Dialog.CloseTrigger>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
       {
         isLoading ?
           (
@@ -243,56 +196,16 @@ export default function App() {
         </Table.Footer>
       </Table.Root>
 
-      {/* 編集用のモーダル（1つだけ用意し、editingRecordの内容を編集する） */}
-      <Dialog.Root open={editingRecord !== null} onOpenChange={(e) => { if (!e.open) setEditingRecord(null) }}>
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              < form onSubmit={handleSubmitEdit(onSubmitEdit)}>
-                <Dialog.Header>
-                  <Dialog.Title>編集登録</Dialog.Title>
-                </Dialog.Header>
-                {/* 編集・入力エリア */}
-                <Dialog.Body>
-                  <Field.Root required>
-                    <Field.Label>
-                      学習内容 <Field.RequiredIndicator />
-                    </Field.Label>
-                    <Input type="text" placeholder='学習内容を入力' id='edit-text' {...registerEdit("title", { required: "学習内容は必須です" })} />
-                    {editErrors.title && <p className='error'> {editErrors.title.message}</p>}
-                  </Field.Root>
-
-                  <Field.Root>
-                    <Field.Label>学習時間</Field.Label>
-                    <NumberInput.Root required>
-                      <NumberInput.Control />
-                      <NumberInput.Input type="number" placeholder='学習時間を入力' id='edit-time' {...registerEdit("time", {
-                        required: "学習時間は必須です", min: {
-                          value: 1,
-                          message: "時間は1以上である必要があります"
-                        }
-                      })} />
-                    </NumberInput.Root>
-                    {editErrors.time && <p className='error'>{editErrors.time.message}</p>}
-                  </Field.Root>
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Dialog.ActionTrigger asChild>
-                    <Button variant="outline">キャンセル</Button>
-                  </Dialog.ActionTrigger>
-                  <Button type="submit" bg="blue.fg" fontWeight="semibold">更新する</Button>
-                </Dialog.Footer>
-              </form>
-              <Dialog.CloseTrigger asChild>
-                <CloseButton size="sm" />
-              </Dialog.CloseTrigger>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
 
 
+      <EditArea
+        editingRecord={editingRecord}
+        setEditingRecord={setEditingRecord}
+        handleSubmitEdit={handleSubmitEdit}
+        onSubmitEdit={onSubmitEdit}
+        registerEdit={registerEdit}
+        editErrors={editErrors}
+      />
 
     </div >
 
