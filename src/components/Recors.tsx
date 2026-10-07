@@ -24,14 +24,14 @@ export default function RecordList({ record, onClickDelete, onClickEdit }: Props
                 <Table.Cell>{record.time}時間</Table.Cell>
                 <Table.Cell textAlign="center">
                     {/* 編集画面オープンのトリガーアイコン */}
-                    <button onClick={() => onClickEdit(record)} className='btn'>
+                    <button onClick={() => onClickEdit(record)} className='btn' aria-label="編集">
                         <Icon size="lg" color="gray.400">
                             <FaPen />
                         </Icon>
                     </button>
                 </Table.Cell>
                 <Table.Cell textAlign="center">
-                    <button onClick={() => onClickDelete(record.id)} className='btn'>
+                    <button onClick={() => onClickDelete(record.id)} className='btn' aria-label="削除">
                         <Icon size="lg" color="gray.400">
                             <FaTrashAlt />
                         </Icon>
