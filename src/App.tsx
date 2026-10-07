@@ -153,7 +153,7 @@ export default function App() {
                       {errors.title && <p>{errors.title.message}</p>}
 
                     </div>
-                    <div>
+                    <div className='time-wrapper'>
                       <label htmlFor="time">
                         学習時間
                       </label>
@@ -171,9 +171,9 @@ export default function App() {
 
                     </div>
                     <Dialog.ActionTrigger asChild>
-                      <Button variant="outline">キャンセル</Button>
+                      <Button variant="outline" size="md">キャンセル</Button>
                     </Dialog.ActionTrigger>
-                    <Button onClick={onSubmit} type="submit" bg="teal.600">登録</Button>
+                    <Button type="submit" bg="teal.600" size="md" className='submit-button'>登録</Button>
 
                   </Dialog.Body>
                 </form>
