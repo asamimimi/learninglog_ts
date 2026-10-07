@@ -33,10 +33,6 @@ export default function App() {
   const [inpuText, setInputText] = useState("");
   const [inpuTime, setInputTime] = useState(0);
 
-  // ダイアログの開閉
-  const [open, setOpen] = useState(false);
-
-
   // 合計時間
   const totalTime = records.reduce((sum, content) => {
     // 文字列として扱われないよう、Number()で数値に変換
@@ -122,151 +118,197 @@ export default function App() {
     }
     await fetchData();
   };
+  // 編集中のレコード（nullなら編集モーダルは閉じている）
+  const [editingRecord, setEditingRecord] = useState<Recode | null>(null);
+
+  // 編集用フォーム（新規登録フォームとは別に管理する）
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors },
+  } = useForm<{ title: string, time: number }>();
+
+  // 編集モーダルを開く（選択した行の値をフォームに入れる）
+  const onClickEdit = (record: Recode) => {
+    setEditingRecord(record);
+    resetEdit({ title: record.title, time: record.time });
+  };
+
+  // 更新機能
+  const onSubmitEdit = async (data: { title: string, time: number }) => {
+    if (!editingRecord) return;
+    const { error } = await supabase
+      .from('study-record')
+      .update({
+        title: data.title,
+        time: data.time,
+      })
+      .eq('id', editingRecord.id);
+    if (error) {
+      console.error("データ更新エラー:", error);
+      return;
+    }
+    // 更新成功時のみモーダルを閉じる
+    setEditingRecord(null);
+    await fetchData();
+  };
+  return (<>
+    <div className='wrapper'>
+
+
+      <h1>新・学習記録アプリ</h1>
+      <Dialog.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+        <Dialog.Trigger asChild>
+          <Button size="xl" bg="pink.solid" fontWeight="semibold">新規登録</Button>
+        </Dialog.Trigger>
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              < form onSubmit={handleSubmit(onSubmit)} >
+                <Dialog.Header>
+                  <Dialog.Title>新規登録</Dialog.Title>
+                </Dialog.Header>
+                {/* 入力エリア */}
+                <Dialog.Body>
+                  <div>
+                    <label htmlFor="text">
+                      学習内容
+                    </label>
+                    <Input type="text" placeholder='学習内容を入力' id='text'  {...register("title", { required: "学習内容は必須です" })} />
+                    {errors.title && <p>{errors.title.message}</p>}
+
+                  </div>
+                  <div className='time-wrapper'>
+                    <label htmlFor="time">
+                      学習時間
+                    </label>
+                    <NumberInput.Root>
+                      <NumberInput.Control />
+                      <NumberInput.Input type="number" placeholder='学習時間を入力' id='time'  {...register("time", {
+                        required: "学習時間は必須です", min: {
+                          value: 1,
+                          message: "時間は1以上である必要があります"
+                        }
+                      })} />
+                    </NumberInput.Root>
+                    時間
+                    {errors.time && <p>{errors.time.message}</p>}
+
+                  </div>
+
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Dialog.ActionTrigger asChild>
+                    <Button variant="outline" size="md">キャンセル</Button>
+                  </Dialog.ActionTrigger>
+                  <Button type="submit" bg="teal.600" size="md" className='submit-button'>登録</Button>
+
+                </Dialog.Footer>
+              </form>
+
+              <Dialog.CloseTrigger asChild>
+                <CloseButton size="sm" />
+              </Dialog.CloseTrigger>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+
+
+      {/* テーブル */}
+      <Table.Root size="sm">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>学習内容</Table.ColumnHeader>
+            <Table.ColumnHeader>学習時間</Table.ColumnHeader>
+            <Table.ColumnHeader textAlign="end"></Table.ColumnHeader>
+            <Table.ColumnHeader textAlign="end"></Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+
+          {records.map((record) => {
+            return (
+              <Table.Row key={record.id}>
+                <Table.Cell>{record.title}</Table.Cell>
+                <Table.Cell>{record.time}時間</Table.Cell>
+                <Table.Cell textAlign="center">
+                  {/* 編集画面オープンのトリガーアイコン */}
+                  <button onClick={() => onClickEdit(record)}>
+                    <Icon size="lg" color="gray.400">
+                      <FaPen />
+                    </Icon>
+                  </button>
+                </Table.Cell>
+                <Table.Cell textAlign="center">
+                  <button onClick={() => onClickDelete(record.id)}>
+                    <Icon size="lg" color="gray.400">
+                      <FaTrashAlt />
+                    </Icon>
+                  </button>
+                </Table.Cell>
+              </Table.Row>
+            )
+          })}
+
+        </Table.Body>
+      </Table.Root>
+
+      {/* 編集用のモーダル（1つだけ用意し、editingRecordの内容を編集する） */}
+      <Dialog.Root open={editingRecord !== null} onOpenChange={(e) => { if (!e.open) setEditingRecord(null) }}>
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              < form onSubmit={handleSubmitEdit(onSubmitEdit)}>
+                <Dialog.Header>
+                  <Dialog.Title>編集登録</Dialog.Title>
+                </Dialog.Header>
+                {/* 編集・入力エリア */}
+                <Dialog.Body>
+                  <Field.Root required>
+                    <Field.Label>
+                      学習内容 <Field.RequiredIndicator />
+                    </Field.Label>
+                    <Input type="text" placeholder='学習内容を入力' id='edit-text' {...registerEdit("title", { required: "学習内容は必須です" })} />
+                    {editErrors.title && <p>{editErrors.title.message}</p>}
+                  </Field.Root>
+
+                  <Field.Root>
+                    <Field.Label>学習時間</Field.Label>
+                    <NumberInput.Root required>
+                      <NumberInput.Control />
+                      <NumberInput.Input type="number" placeholder='学習時間を入力' id='edit-time' {...registerEdit("time", {
+                        required: "学習時間は必須です", min: {
+                          value: 1,
+                          message: "時間は1以上である必要があります"
+                        }
+                      })} />
+                    </NumberInput.Root>
+                    {editErrors.time && <p>{editErrors.time.message}</p>}
+                  </Field.Root>
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Dialog.ActionTrigger asChild>
+                    <Button variant="outline">キャンセル</Button>
+                  </Dialog.ActionTrigger>
+                  <Button type="submit" bg="blue.fg" fontWeight="semibold">更新する</Button>
+                </Dialog.Footer>
+              </form>
+              <Dialog.CloseTrigger asChild>
+                <CloseButton size="sm" />
+              </Dialog.CloseTrigger>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
 
 
 
-  return (
-    <>
-      <div className='wrapper'>
+    </div >
 
-
-        <h1>新・学習記録アプリ</h1>
-        <Dialog.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-          <Dialog.Trigger asChild>
-            <Button size="xl" bg="pink.solid" fontWeight="semibold">新規登録</Button>
-          </Dialog.Trigger>
-          <Portal>
-            <Dialog.Backdrop />
-            <Dialog.Positioner>
-              <Dialog.Content>
-                < form onSubmit={handleSubmit(onSubmit)} >
-                  <Dialog.Header>
-                    <Dialog.Title>新規登録</Dialog.Title>
-                  </Dialog.Header>
-                  {/* 入力エリア */}
-                  <Dialog.Body>
-                    <div>
-                      <label htmlFor="text">
-                        学習内容
-                      </label>
-                      <Input type="text" placeholder='学習内容を入力' id='text'  {...register("title", { required: "学習内容は必須です" })} />
-                      {errors.title && <p>{errors.title.message}</p>}
-
-                    </div>
-                    <div className='time-wrapper'>
-                      <label htmlFor="time">
-                        学習時間
-                      </label>
-                      <NumberInput.Root>
-                        <NumberInput.Control />
-                        <NumberInput.Input type="number" placeholder='学習時間を入力' id='time'  {...register("time", {
-                          required: "学習時間は必須です", min: {
-                            value: 1,
-                            message: "時間は1以上である必要があります"
-                          }
-                        })} />
-                      </NumberInput.Root>
-                      時間
-                      {errors.time && <p>{errors.time.message}</p>}
-
-                    </div>
-                    <Dialog.ActionTrigger asChild>
-                      <Button variant="outline" size="md">キャンセル</Button>
-                    </Dialog.ActionTrigger>
-                    <Button type="submit" bg="teal.600" size="md" className='submit-button'>登録</Button>
-
-                  </Dialog.Body>
-                </form>
-
-                <Dialog.CloseTrigger asChild>
-                  <CloseButton size="sm" />
-                </Dialog.CloseTrigger>
-              </Dialog.Content>
-            </Dialog.Positioner>
-          </Portal>
-        </Dialog.Root>
-
-
-        {/* テーブル */}
-        <Table.Root size="sm">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeader>学習内容</Table.ColumnHeader>
-              <Table.ColumnHeader>学習時間</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end"></Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end"></Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-
-            {records.map((record) => {
-              return (
-                <Table.Row key={record.id}>
-                  <Table.Cell>{record.title}</Table.Cell>
-                  <Table.Cell>{record.time}時間</Table.Cell>
-                  <Table.Cell textAlign="center">
-                    <Dialog.Root>
-                      <Dialog.Trigger asChild>
-                        <Icon size="lg" color="gray.400">
-                          <FaPen />
-                        </Icon>
-                      </Dialog.Trigger>
-                      <Portal>
-                        <Dialog.Backdrop />
-                        <Dialog.Positioner>
-                          <Dialog.Content>
-                            <Dialog.Header>
-                              <Dialog.Title>編集登録</Dialog.Title>
-                            </Dialog.Header>
-                            {/* 入力エリア */}
-                            <Dialog.Body>
-                              <Field.Root required>
-                                <Field.Label>
-                                  学習内容 <Field.RequiredIndicator />
-                                </Field.Label>
-                                <Input onChange={onChengeInputText} type="text" id='text' value={inpuText} placeholder={record.title} />
-                              </Field.Root>
-
-                              <Field.Root>
-                                <Field.Label>学習時間</Field.Label>
-                                <NumberInput.Root required>
-                                  <NumberInput.Control />
-                                  <NumberInput.Input onChange={onChengeInputTime} id='time' value={inpuTime} placeholder={record.time} />
-                                </NumberInput.Root>
-                              </Field.Root>
-                            </Dialog.Body>
-                            <Dialog.Footer>
-                              <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">キャンセル</Button>
-                              </Dialog.ActionTrigger>
-                              <Button bg="blue.fg" fontWeight="semibold">登録する</Button>
-                            </Dialog.Footer>
-                            <Dialog.CloseTrigger asChild>
-                              <CloseButton size="sm" />
-                            </Dialog.CloseTrigger>
-                          </Dialog.Content>
-                        </Dialog.Positioner>
-                      </Portal>
-                    </Dialog.Root>
-                  </Table.Cell>
-                  <Table.Cell textAlign="center">
-                    <button onClick={() => onClickDelete(record.id)}>
-                      <Icon size="lg" color="gray.400">
-                        <FaTrashAlt />
-                      </Icon>
-                    </button>
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })}
-
-          </Table.Body>
-        </Table.Root>
-
-
-
-      </div >
-
-    </>
+  </>
   )
 }
