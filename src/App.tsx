@@ -45,7 +45,7 @@ export default function App() {
   const [isOpen, setIsOpen] = useState(false);
 
   // ローデイング管理
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
 
   // ページ読み込み時のデータ取得
@@ -57,8 +57,10 @@ export default function App() {
         console.error(error)
         return
       }
-      setRecords(data)
-
+      if (data) {
+        setRecords(data)
+      }
+      setIsLoading(false);
     }
     fetchRecords()
   }, [])
@@ -67,27 +69,20 @@ export default function App() {
 
   // 登録時データ取得用の関数
   const fetchData = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase.from('study-record').select("*");
     if (error) {
       console.error("データ取得エラー:", error);
       return;
     }
     setRecords(data);
+    setIsLoading(false);
   };
-
-  // 入力されたテキストを取得
-  const onChengeInputText = (e) => {
-    setInputText(e.target.value);
-  }
-  // 入力された時間を取得
-  const onChengeInputTime = (e) => {
-    setInputTime(e.target.value);
-  }
 
 
   // フォーム管理・データ登録
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const onSubmit = async (data) => {
+  const { register, handleSubmit, formState: { errors } } = useForm<{ title: string, time: number }>();
+  const onSubmit = async (data: Recode) => {
     try {
       const { error } = await supabase.from('study-record').insert([{
         title: data.title,
@@ -158,6 +153,8 @@ export default function App() {
 
 
       <h1>新・学習記録アプリ</h1>
+
+
       <Dialog.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
         <Dialog.Trigger asChild>
           <Button size="xl" bg="pink.solid" fontWeight="semibold">新規登録</Button>
@@ -215,7 +212,14 @@ export default function App() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
-
+      {
+        isLoading ?
+          (
+            <div>
+              Loading...
+            </div>
+          ) : null
+      }
 
       {/* テーブル */}
       <Table.Root size="sm">
@@ -236,14 +240,14 @@ export default function App() {
                 <Table.Cell>{record.time}時間</Table.Cell>
                 <Table.Cell textAlign="center">
                   {/* 編集画面オープンのトリガーアイコン */}
-                  <button onClick={() => onClickEdit(record)}>
+                  <button onClick={() => onClickEdit(record)} className='btn'>
                     <Icon size="lg" color="gray.400">
                       <FaPen />
                     </Icon>
                   </button>
                 </Table.Cell>
                 <Table.Cell textAlign="center">
-                  <button onClick={() => onClickDelete(record.id)}>
+                  <button onClick={() => onClickDelete(record.id)} className='btn'>
                     <Icon size="lg" color="gray.400">
                       <FaTrashAlt />
                     </Icon>
